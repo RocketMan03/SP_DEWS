@@ -7,6 +7,10 @@ test_recv.py — 수신 시험 (지휘소 역할). Ctrl+C로 끝내면 전달률
 """
 import argparse
 
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))   # e22·protocol은 상위 modules/ 에 있음
 from e22 import E22
 from protocol import LEVEL_NAMES, Ack, Alert, PacketParser
 
@@ -16,6 +20,8 @@ ap.add_argument("--no-gpio", action="store_true")
 ap.add_argument("--raw", action="store_true")
 ap.add_argument("--count", type=int, default=100, help="송신 측에서 보낸 개수")
 args = ap.parse_args()
+if args.count > 256:
+    ap.error("--count는 256 이하 (seq 0~255 순환)")
 
 parser = PacketParser()
 seen: set[int] = set()

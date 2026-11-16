@@ -8,6 +8,10 @@ test_send.py — 송신 시험 (관측소 역할)
 import argparse
 import time
 
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))   # e22·protocol은 상위 modules/ 에 있음
 from e22 import E22
 from protocol import Alert, SeqCounter, encode_alert, now_ms16
 
@@ -19,6 +23,8 @@ ap.add_argument("--count", type=int, default=100, help="256 이하 (seq가 0~255
 ap.add_argument("--interval", type=float, default=1.0, help="전송 간격(초)")
 ap.add_argument("--node", type=int, default=1)
 args = ap.parse_args()
+if args.count > 256:
+    ap.error("--count는 256 이하 (seq 0~255 순환)")
 
 with E22(args.port, use_gpio=not args.no_gpio) as lora:
     seq = SeqCounter()
@@ -35,6 +41,7 @@ with E22(args.port, use_gpio=not args.no_gpio) as lora:
 
         t0 = time.monotonic()
         lora.send(frame)
+        lora.wait_aux(0.1, level=False)                # 모듈이 AUX를 내릴 때까지 (바로 재면 UART 시간만 잼)
         lora.wait_aux(2.0)                             # 무선 송신이 끝날 때까지
         dt = (time.monotonic() - t0) * 1000
         print(f"[{i + 1}/{args.count}] {len(frame)} B, 송신 {dt:.0f} ms | {frame.hex(' ')}")
